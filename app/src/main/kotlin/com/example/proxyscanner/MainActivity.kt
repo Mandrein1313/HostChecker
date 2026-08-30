@@ -28,68 +28,72 @@ class MainActivity : AppCompatActivity() {
         tvResult = findViewById(R.id.tvResult)
 
         btnCheck.setOnClickListener {
-            val inputHost = etHost.text.toString().trim()
-            if (inputHost.isNotEmpty()) {
-                checkHost(inputHost)
+            val input = etHost.text.toString().trim()
+            if (input.isNotEmpty()) {
+                val hosts = input.split("\n")
+                    .map { it.trim() }
+                    .filter { it.isNotEmpty() }
+                tvResult.text = ""
+                checkHosts(hosts)
             } else {
                 tvResult.text = "กรุณากรอก Host หรือ IP ก่อนครับ"
             }
         }
     }
 
-    private fun checkHost(targetHost: String) {
-        // แสดง ProgressBar และปิดปุ่มชั่วคราวระหว่างรอผล
+    /** ตรวจสอบหลาย Host พร้อมกัน */
+    private fun checkHosts(hosts: List<String>) {
+        val latch = java.util.concurrent.CountDownLatch(hosts.size)
+
         progressBar.visibility = View.VISIBLE
         btnCheck.isEnabled = false
-        tvResult.text = "กำลังตรวจสอบ $targetHost ..."
 
-        // แยกไปทำงานบน Background Thread ป้องกันแอปค้าง
-        thread {
-            val startTime = System.currentTimeMillis()
-            var responseCode = -1
-            var responseMessage = ""
+        for (host in hosts) {
+            thread {
+                val startTime = System.currentTimeMillis()
+                var responseCode = -1
+                var responseMessage = ""
 
-            try {
-                val formattedUrl = if (!targetHost.startsWith("http://") && !targetHost.startsWith("https://")) {
-                    "http://$targetHost"
-                } else {
-                    targetHost
+                try {
+                    val formattedUrl = if (!host.startsWith("http://") && !host.startsWith("https://")) {
+                        "http://$host"
+                    } else host
+
+                    val url = URL(formattedUrl)
+                    val connection = url.openConnection() as HttpURLConnection
+                    connection.connectTimeout = 5000
+                    connection.readTimeout = 5000
+                    connection.requestMethod = "HEAD"
+                    connection.instanceFollowRedirects = false
+
+                    responseCode = connection.responseCode
+                    responseMessage = connection.responseMessage
+                    connection.disconnect()
+                } catch (e: Exception) {
+                    responseMessage = e.localizedMessage ?: "Connection Failed"
                 }
 
-                val url = URL(formattedUrl)
-                val connection = url.openConnection() as HttpURLConnection
-                connection.connectTimeout = 5000 // หมดเวลาใน 5 วินาที
-                connection.readTimeout = 5000
-                connection.requestMethod = "HEAD" // ใช้ HEAD เพื่อส่งข้อมูลน้อยและตอบกลับเร็ว
-                connection.instanceFollowRedirects = false
+                val elapsedTime = System.currentTimeMillis() - startTime
 
-                responseCode = connection.responseCode
-                responseMessage = connection.responseMessage
-                connection.disconnect()
-            } catch (e: Exception) {
-                responseMessage = e.localizedMessage ?: "Connection Failed"
+                runOnUiThread {
+                    val result = if (responseCode != -1) {
+                        "HOST: $host\nSTATUS: $responseCode ($responseMessage)\nTIME: ${elapsedTime} ms\n\n"
+                    } else {
+                        "HOST: $host\nERROR: ไม่สามารถเชื่อมต่อได้\nDETAIL: $responseMessage\nTIME: ${elapsedTime} ms\n\n"
+                    }
+                    tvResult.append(result)
+                }
+
+                latch.countDown()
             }
+        }
 
-            val elapsedTime = System.currentTimeMillis() - startTime
-
-            // ส่งผลลัพธ์กลับมาแสดงผลที่ UI Main Thread
+        // เมื่อทุก thread เสร็จแล้ว ปิด ProgressBar
+        thread {
+            latch.await()
             runOnUiThread {
                 progressBar.visibility = View.GONE
                 btnCheck.isEnabled = true
-
-                if (responseCode != -1) {
-                    tvResult.text = """
-                         STATUS: $responseCode ($responseMessage)
-                         TIME: ${elapsedTime} ms
-                         HOST: $targetHost
-                    """.trimIndent()
-                } else {
-                    tvResult.text = """
-                         ERROR: ไม่สามารถเชื่อมต่อได้
-                         DETAIL: $responseMessage
-                         TIME: ${elapsedTime} ms
-                    """.trimIndent()
-                }
             }
         }
     }

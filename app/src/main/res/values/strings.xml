@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">HostChecker</string>
+    <string name="checking_hosts">กำลังตรวจสอบ %1$d host ...</string>
 </resources>

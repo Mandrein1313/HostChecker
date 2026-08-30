@@ -5,42 +5,39 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Host &amp; Proxy Checker"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="16dp" />
-
     <EditText
         android:id="@+id/etHost"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="ใส่ Host หรือ IP (เช่น google.com)"
-        android:inputType="textUri" />
+        android:hint="กรอก Host หรือ IP (แยกบรรทัด)"
+        android:inputType="textMultiLine"
+        android:minLines="4"
+        android:gravity="top|start" />
 
     <Button
         android:id="@+id/btnCheck"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="ตรวจสอบการเชื่อมต่อ"
-        android:layout_marginTop="8dp" />
+        android:text="ตรวจสอบ" />
 
     <ProgressBar
         android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:visibility="gone"
-        android:layout_marginTop="16dp" />
-
-    <TextView
-        android:id="@+id/tvResult"
+        style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:textSize="14sp"
-        android:text="ผลการตรวจสอบจะแสดงที่นี่" />
+        android:visibility="gone" />
 
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingTop="8dp">
+
+        <TextView
+            android:id="@+id/tvResult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="@android:color/black" />
+    </ScrollView>
 </LinearLayout>
